@@ -11,6 +11,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    from bs4 import BeautifulSoup
+    BS4_AVAILABLE = True
+except ImportError:
+    BS4_AVAILABLE = False
+    logger.warning("BeautifulSoup4 not available. HTML parsing will be limited.")
+
 
 class EmailFetcher:
     """Fetches emails from IMAP server"""
@@ -45,6 +52,43 @@ class EmailFetcher:
             logger.error(f"Failed to select mailbox: {e}")
             return False
     
+    def _extract_text_from_html(self, html_content: str) -> str:
+        """Extract readable text from HTML content"""
+        if not BS4_AVAILABLE:
+            # Fallback: basic HTML tag removal using regex
+            import re
+            # Remove script and style tags
+            html_content = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+            html_content = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+            # Remove HTML tags but keep text
+            text = re.sub(r'<[^>]+>', ' ', html_content)
+            # Decode HTML entities
+            text = text.replace('&nbsp;', ' ')
+            text = text.replace('&amp;', '&')
+            text = text.replace('&lt;', '<')
+            text = text.replace('&gt;', '>')
+            text = text.replace('&quot;', '"')
+            # Clean up whitespace
+            text = ' '.join(text.split())
+            return text.strip()
+        
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
+            # Get text
+            text = soup.get_text()
+            # Clean up whitespace
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text = ' '.join(chunk for chunk in chunks if chunk)
+            return text.strip()
+        except Exception as e:
+            logger.warning(f"Failed to parse HTML: {e}")
+            # Fallback to basic extraction
+            return html_content.strip()
+
     def fetch_recent_emails(self, max_count: int = 50) -> List[bytes]:
         """Fetch recent email IDs"""
         try:
@@ -95,26 +139,57 @@ class EmailFetcher:
             # Get date
             date = msg.get("Date", "")
             
-            # Extract body text
+            # Extract body text - prioritize plain text, fallback to HTML
             body = ""
+            html_body = ""
+            
             if msg.is_multipart():
+                # Walk through all parts to find text/plain and text/html
                 for part in msg.walk():
                     content_type = part.get_content_type()
                     if content_type == "text/plain":
                         payload = part.get_payload(decode=True)
                         if payload:
-                            body += payload.decode("utf-8", errors="ignore")
+                            decoded = payload.decode("utf-8", errors="ignore")
+                            body += decoded
+                    elif content_type == "text/html":
+                        payload = part.get_payload(decode=True)
+                        if payload:
+                            decoded = payload.decode("utf-8", errors="ignore")
+                            html_body += decoded
             else:
+                # Single part email
+                content_type = msg.get_content_type()
                 payload = msg.get_payload(decode=True)
                 if payload:
-                    body = payload.decode("utf-8", errors="ignore")
+                    decoded = payload.decode("utf-8", errors="ignore")
+                    if content_type == "text/html":
+                        html_body = decoded
+                    else:
+                        body = decoded
+            
+            # Use plain text if available, otherwise extract text from HTML
+            if body.strip():
+                # We have plain text, use it
+                final_body = body.strip()
+            elif html_body.strip():
+                # No plain text, but we have HTML - extract text from it
+                logger.debug(f"Email {email_id.decode()} has only HTML content, extracting text...")
+                final_body = self._extract_text_from_html(html_body)
+                if not final_body:
+                    # If extraction failed, log and use a fallback message
+                    logger.warning(f"Could not extract text from HTML for email {email_id.decode()}")
+                    final_body = "[Email content could not be extracted - HTML only email with no readable text]"
+            else:
+                # No body content at all
+                final_body = ""
             
             return {
                 "id": email_id.decode(),
                 "subject": subject.strip(),
                 "sender": sender.strip(),
                 "date": date,
-                "body": body.strip()
+                "body": final_body
             }
         except Exception as e:
             logger.error(f"Failed to parse email {email_id}: {e}")
