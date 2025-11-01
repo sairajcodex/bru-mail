@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Agent Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 95%;
+            width: 95%;
+            margin: 0 auto;
+            background: #ffffff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 35px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 400;
+            color: #333;
+            letter-spacing: 0.5px;
+        }
+
+        .refresh-btn {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 400;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #555;
+        }
+
+        .timestamp {
+            color: #999;
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 300;
+        }
+
+        .empty-state {
+            padding: 100px 40px;
+            text-align: center;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1px;
+            background: #e0e0e0;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            padding: 35px 25px;
+            text-align: center;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .stat-card:last-child {
+            border-right: none;
+        }
+
+        .stat-value {
+            font-size: 40px;
+            font-weight: 300;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 400;
+        }
+
+        .category-chart {
+            padding: 50px 60px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 400;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 35px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .category-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .category-label {
+            width: 120px;
+            font-size: 16px;
+            font-weight: 400;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-bar-fill {
+            flex: 1;
+            height: 36px;
+            background: #333;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 1px;
+            background: #e0e0e0;
+            padding: 0 60px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .filter-tab {
+            background: #f5f5f5;
+            border: none;
+            padding: 18px 28px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 400;
+            color: #666;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-tab:hover {
+            background: #eeeeee;
+        }
+
+        .filter-tab.active {
+            background: #ffffff;
+            color: #333;
+            border-bottom: 2px solid #333;
+        }
+
+        .sections {
+            padding: 50px 60px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .emails-list {
+            display: grid;
+            gap: 1px;
+            background: #e0e0e0;
+        }
+
+        .email-card {
+            background: #ffffff;
+            padding: 35px;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+        }
+
+        .email-card:hover {
+            background: #fafafa;
+        }
+
+        .email-card:last-child {
+            border-bottom: none;
+        }
+
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .email-subject {
+            font-size: 20px;
+            font-weight: 400;
+            color: #333;
+            flex: 1;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .email-category {
+            background: #333;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 20px;
+            height: fit-content;
+        }
+
+        .email-sender {
+            color: #666;
+            font-size: 15px;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .email-summary {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .email-summary-label {
+            font-weight: 400;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .email-summary-text {
+            color: #333;
+            line-height: 1.8;
+            font-size: 16px;
+            font-weight: 300;
+        }
+
+        .unsubscribe-links {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .unsubscribe-link {
+            display: inline-block;
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            font-size: 13px;
+            margin-right: 10px;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 400;
+            transition: background 0.2s;
+        }
+
+        .unsubscribe-link:hover {
+            background: #555;
+        }
+
+        .unsubscribe-section {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .unsubscribe-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .unsubscribe-list-item {
+            background: #ffffff;
+            padding: 15px;
+            margin-bottom: 1px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .unsubscribe-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .unsubscribe-list-item a {
+            color: #333;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 300;
+            word-break: break-all;
+        }
+
+        .unsubscribe-list-item a:hover {
+            color: #666;
+            text-decoration: underline;
+        }
+
+        /* Chat Interface */
+        .chat-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-button:hover {
+            background: #555;
+            transform: scale(1.1);
+        }
+
+        .chat-panel {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 400px;
+            height: 600px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+        }
+
+        .chat-panel.open {
+            display: flex;
+        }
+
+        .chat-header {
+            background: #333;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h3 {
+            font-size: 16px;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        .chat-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-close:hover {
+            opacity: 0.7;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-message.user {
+            align-items: flex-end;
+        }
+
+        .chat-message.assistant {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message-bubble.user {
+            background: #333;
+            color: white;
+        }
+
+        .message-bubble.assistant {
+            background: #ffffff;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .chat-input-container {
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            background: #ffffff;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            max-height: 100px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .chat-send {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 400;
+            transition: background 0.2s;
+        }
+
+        .chat-send:hover {
+            background: #555;
+        }
+
+        .chat-send:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .chat-status {
+            padding: 10px 20px;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .chat-status.error {
+            background: #fff5f5;
+            color: #cc0000;
+        }
+
+        .chat-status.success {
+            background: #f5fff5;
+            color: #006600;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #666;
+            margin: 0 20px 15px;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .sections {
+                padding: 30px 20px;
+            }
+
+            .category-chart {
+                padding: 30px 20px;
+            }
+
+            .filter-tabs {
+                padding: 0 20px;
+                overflow-x: auto;
+            }
+
+            .header {
+                padding: 25px 30px;
+            }
+
+            .container {
+                max-width: 100%;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Email Agent Dashboard</h1>
+                <div class="timestamp" id="timestamp"></div>
+            </div>
+            <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+        </div>
+
+        <div id="content">
+            {% if not has_data %}
+            <div class="empty-state">
+                <h2>No Reports Found</h2>
+                <p>Run <code>python main.py</code> to generate email reports</p>
+            </div>
+            {% else %}
+            <!-- Statistics Section -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-emails">{{ report.statistics.total_emails }}</div>
+                    <div class="stat-label">Total Emails</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="unique-unsubscribe">{{ report.statistics.unique_unsubscribe_links }}</div>
+                    <div class="stat-label">Unsubscribe Links</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="emails-unsubscribe">{{ report.statistics.emails_with_unsubscribe }}</div>
+                    <div class="stat-label">Emails with Links</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="categories-count">{{ report.statistics.category_counts|length }}</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="category-chart">
+                <h2 class="section-title">Category Breakdown</h2>
+                {% for category, count in report.statistics.category_counts.items() %}
+                {% set percentage = (count / report.statistics.total_emails * 100)|round(1) %}
+                <div class="category-bar">
+                    <div class="category-label">{{ category }}</div>
+                    <div class="category-bar-fill" style="width: {{ percentage }}%">
+                        {{ count }} ({{ percentage }}%)
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterEmails('all')">All ({{ report.emails|length }})</button>
+                {% for category, count in report.statistics.category_counts.items() %}
+                <button class="filter-tab" onclick="filterEmails('{{ category }}')">{{ category }} ({{ count }})</button>
+                {% endfor %}
+            </div>
+
+            <!-- Emails Section -->
+            <div class="sections">
+                <!-- All Emails with Summaries -->
+                <div class="section">
+                    <h2 class="section-title">Emails ({{ report.emails|length }})</h2>
+                    <div class="emails-list" id="emails-list">
+                        {% for email in report.emails %}
+                        <div class="email-card" data-category="{{ email.category }}">
+                            <div class="email-header">
+                                <div class="email-subject">{{ email.subject }}</div>
+                                <span class="email-category">{{ email.category }}</span>
+                            </div>
+                            <div class="email-sender">From: {{ email.sender }}</div>
+                            {% if email.summary and email.summary.strip() %}
+                            <div class="email-summary">
+                                <div class="email-summary-label">Summary</div>
+                                <div class="email-summary-text">{{ email.summary }}</div>
+                            </div>
+                            {% endif %}
+                            {% if email.unsubscribe_links %}
+                            <div class="unsubscribe-links">
+                                {% for link in email.unsubscribe_links %}
+                                <a href="{{ link }}" target="_blank" class="unsubscribe-link">Unsubscribe</a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Unsubscribe Links Section -->
+                <div class="section">
+                    <h2 class="section-title">Unsubscribe Links ({{ report.unsubscribe_links|length }})</h2>
+                    <div class="unsubscribe-section">
+                        <ul class="unsubscribe-list">
+                            {% for link in report.unsubscribe_links %}
+                            <li class="unsubscribe-list-item">
+                                <a href="{{ link }}" target="_blank">{{ link }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <button class="chat-button" id="chatToggle" onclick="toggleChat()">💬</button>
+    
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <h3>AI Assistant</h3>
+            <button class="chat-close" onclick="toggleChat()">×</button>
+        </div>
+        <div class="chat-status" id="chatStatus">Chat ready</div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-message assistant">
+                <div class="message-bubble assistant">
+                    Hello! I'm your AI assistant. I can help you understand your email reports, categories, and statistics. Ask me anything!
+                </div>
+            </div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">AI is thinking...</div>
+        <div class="chat-input-container">
+            <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your emails..." rows="1"></textarea>
+            <button class="chat-send" id="chatSend" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Display timestamp
+        const timestamp = "{{ report.statistics.timestamp if has_data else '' }}";
+        if (timestamp) {
+            const date = new Date(timestamp);
+            document.getElementById('timestamp').textContent = 'Last updated: ' + date.toLocaleString();
+        }
+
+        // Filter emails by category
+        function filterEmails(category) {
+            const emails = document.querySelectorAll('.email-card');
+            const tabs = document.querySelectorAll('.filter-tab');
+            
+            // Update active tab
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter emails
+            emails.forEach(email => {
+                if (category === 'all' || email.dataset.category === category) {
+                    email.style.display = 'block';
+                } else {
+                    email.style.display = 'none';
+                }
+            });
+        }
+
+        // Chat functionality
+        let chatOpen = false;
+        let chatAvailable = false;
+
+        // Check chat availability on load
+        fetch('/api/chat/status')
+            .then(response => response.json())
+            .then(data => {
+                chatAvailable = data.available;
+                const statusEl = document.getElementById('chatStatus');
+                if (data.available) {
+                    statusEl.textContent = `Chat ready (${data.provider})`;
+                    statusEl.className = 'chat-status success';
+                } else {
+                    statusEl.textContent = 'Chat not available - LLM not configured';
+                    statusEl.className = 'chat-status error';
+                }
+            })
+            .catch(err => {
+                console.error('Error checking chat status:', err);
+                document.getElementById('chatStatus').textContent = 'Chat unavailable';
+                document.getElementById('chatStatus').className = 'chat-status error';
+            });
+
+        function toggleChat() {
+            chatOpen = !chatOpen;
+            const panel = document.getElementById('chatPanel');
+            const button = document.getElementById('chatToggle');
+            
+            if (chatOpen) {
+                panel.classList.add('open');
+                button.style.display = 'none';
+                document.getElementById('chatInput').focus();
+            } else {
+                panel.classList.remove('open');
+                button.style.display = 'flex';
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            if (!chatAvailable) {
+                addMessage('assistant', 'Chat is not available. Please configure your LLM provider in .env file.');
+                return;
+            }
+
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            
+            // Show typing indicator
+            const typingEl = document.getElementById('typingIndicator');
+            typingEl.classList.add('active');
+            typingEl.scrollIntoView({ behavior: 'smooth' });
+            
+            // Disable send button
+            const sendBtn = document.getElementById('chatSend');
+            sendBtn.disabled = true;
+
+            // Send to API
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                typingEl.classList.remove('active');
+                sendBtn.disabled = false;
+                
+                if (data.success) {
+                    addMessage('assistant', data.response);
+                } else {
+                    addMessage('assistant', data.message || 'Sorry, I encountered an error. Please try again.');
+                }
+            })
+            .catch(error => {
+                typingEl.classList.remove('active');
+                sendBtn.disabled = false;
+                addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+                console.error('Chat error:', error);
+            });
+        }
+
+        function addMessage(type, text) {
+            const messagesEl = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            bubble.textContent = text;
+            
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date().toLocaleTimeString();
+            
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(time);
+            messagesEl.appendChild(messageDiv);
+            
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        // Allow Enter key to send (Shift+Enter for new line)
+        document.getElementById('chatInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        document.getElementById('chatInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+    </script>
+</body>
+</html>

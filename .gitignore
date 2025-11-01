@@ -1,0 +1,41 @@
+# Environment variables - NEVER COMMIT THIS!
+.env
+.env.local
+.env.*.local
+
+# Reports - User generated data
+reports/
+*.json
+*.csv
+*.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
+
